@@ -1,27 +1,32 @@
 use std::env;
-use regex::Regex;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-
     let time_str = &args[1];
-    let days_re = Regex::new(r"(\d+)d").unwrap();
-    let hours_re = Regex::new(r"(\d+)h").unwrap();
-    let minutes_re = Regex::new(r"(\d+)m").unwrap();
-    let seconds_re = Regex::new(r"(\d+)s").unwrap();
+    let mut stack = Vec::<char>::new();
+    let mut total_seconds: u32 = 0;
+    for character in time_str.chars() {
+        match character {
+            '0'..='9' => stack.push(character),
+            'd' | 'h' | 'm' | 's' => {
+                let num = stack.iter().collect::<String>().parse::<u32>().unwrap();
+                stack.clear();
+                total_seconds += calc_seconds(character, num)
+            }
+            _ => panic!("Unrecognized character in time string")
+        }
+    }
 
-    let days = capture_time_unit(time_str, &days_re);
-    let hours = capture_time_unit(time_str, &hours_re);
-    let minutes = capture_time_unit(time_str, &minutes_re);
-    let seconds = capture_time_unit(time_str, &seconds_re);
-
-    let total_seconds = (((days * 24) + hours) * 60 + minutes) * 60 + seconds;
     println!("{}", total_seconds);
 }
 
-fn capture_time_unit(time_str: &str, regex: &Regex) -> u32 {
-    match regex.captures(time_str) {
-        Some(cap) => cap.get(1).map_or("0", |m| m.as_str()).parse::<u32>().unwrap(),
-        None => 0
-    }
+fn calc_seconds(unit: char, num: u32) -> u32 {
+    let multiplier = match unit {
+        'd' => 24 * 60 * 60,
+        'h' => 60 * 60,
+        'm' => 60,
+        's' => 1,
+        _  => panic!("Unrecognized time unit character")
+    };
+    num * multiplier
 }
